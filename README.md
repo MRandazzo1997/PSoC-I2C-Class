@@ -14,10 +14,12 @@ Now, students may pull the commit(s) from the remote solution branch and:
 Program the PSoC as I2C slave and interact with it using the Bridge Control Panel
 
 ## Project 2a
-Program the PSoC as I2C master and connect to it the Adafruit LIS3DH 3-axis Accelerometer
+- Program the PSoC as I2C master and connect to it the Adafruit LIS3DH 3-axis Accelerometer
+- Write the interface function to read the registers of the device
 
 ## Project 2b 
-(...)
+- Write the interface function to write the registers of the device
 
 ## Project 3
-(...)
+- Using your I2C interface functions, setup and read the built-in temperature sensor, convert the raw byte data and send it over UART to the PC
+- (Optional) Plot the data using the Bridge Control Panel
