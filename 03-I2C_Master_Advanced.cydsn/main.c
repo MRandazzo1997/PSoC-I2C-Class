@@ -16,7 +16,7 @@
 
 // Set this to 1 to send byte data for the Bridge Control Panel
 // Otherwise set it to 0 to send temperature data as int16_t
-#define USE_BRIDGECONTROLPANEL  0
+#define USE_BRIDGECONTROLPANEL  1
 
 int main(void)
 {
@@ -45,19 +45,74 @@ int main(void)
     // I2C error return code
     ErrorCode error;
     // Register variables
-    uint8_t tmp_ctrl_reg, other_reg; // find out which is the other register to set
+    uint8_t tmp_cfg_reg, ctrl_reg4;
+    
+    // Only for debugging: reboot memory content
+    /*I2C_Peripheral_WriteRegister(LIS3DH_DEVICE_ADDRESS, 0x24, 0x01);
+    CyDelay(10);
+    I2C_Peripheral_WriteRegister(LIS3DH_DEVICE_ADDRESS, 0x24, 0x00);
+    CyDelay(10);*/
     
     // Your time to code!
     
     // Read LIS3DH_TEMP_CFG_REG
+    error = I2C_Peripheral_ReadRegister(LIS3DH_DEVICE_ADDRESS,
+                                        LIS3DH_TEMP_CFG_REG,
+                                        &tmp_cfg_reg);
+    
+    if (error == NO_ERROR) {
+        sprintf(message, "LIS3DH_TEMP_CFG_REG value: 0x%02X\r\n", tmp_cfg_reg);
+        UART_1_PutString(message); 
+    }
+    else {
+        UART_1_PutString("I2C error while reading LIS3DH_TEMP_CFG_REG\r\n");   
+    }
     
     // Set it to the appropriate value
+    tmp_cfg_reg |= LIS3DH_TEMP_CFG_REG_ACTIVE;
+    error = I2C_Peripheral_WriteRegister(LIS3DH_DEVICE_ADDRESS,
+                                         LIS3DH_TEMP_CFG_REG,
+                                         tmp_cfg_reg);
+    error = I2C_Peripheral_ReadRegister(LIS3DH_DEVICE_ADDRESS,
+                                        LIS3DH_TEMP_CFG_REG,
+                                        &tmp_cfg_reg);
+    if( error == NO_ERROR ) {
+        sprintf(message, "LIS3DH_TEMP_CFG_REG successfully written as: 0x%02X\r\n", tmp_cfg_reg);
+        UART_1_PutString(message); 
+    }
+    else {
+        UART_1_PutString("I2C error while writing LIS3DH_TEMP_CFG_REG\r\n");   
+    }
     
     
-    // Read the other register
+    // Read LIS3DH_CTRL_REG4
+    error = I2C_Peripheral_ReadRegister(LIS3DH_DEVICE_ADDRESS,
+                                        LIS3DH_CTRL_REG4,
+                                        &ctrl_reg4);
+    
+    if (error == NO_ERROR) {
+        sprintf(message, "LIS3DH_CTRL_REG4 value: 0x%02X\r\n", ctrl_reg4);
+        UART_1_PutString(message); 
+    }
+    else {
+        UART_1_PutString("I2C error while reading LIS3DH_CTRL_REG4\r\n");   
+    }
     
     // Set it to the appropriate value
-    
+    ctrl_reg4 = LIS3DH_CTRL_REG4_BDU_ACTIVE;
+    error = I2C_Peripheral_WriteRegister(LIS3DH_DEVICE_ADDRESS,
+                                         LIS3DH_CTRL_REG4,
+                                         ctrl_reg4);
+    error = I2C_Peripheral_ReadRegister(LIS3DH_DEVICE_ADDRESS,
+                                        LIS3DH_CTRL_REG4,
+                                        &ctrl_reg4);
+    if( error == NO_ERROR ) {
+        sprintf(message, "LIS3DH_CTRL_REG4 successfully written as: 0x%02X\r\n", ctrl_reg4);
+        UART_1_PutString(message); 
+    }
+    else {
+        UART_1_PutString("I2C error while writing LIS3DH_CTRL_REG4\r\n");   
+    }
     
     
     /**   Temperature reading and log over UART   **/
@@ -65,30 +120,51 @@ int main(void)
     // Init the data BUFFER
     const uint8_t header = 0xA0;
     const uint8_t footer = 0xC0;
-    uint8_t dataArray[4];
+    uint8_t dataArray[4] = {0};
     dataArray[0] = header;
     dataArray[3] = footer;
     
     int16_t dirtyTrick = 1000;
     
     // Raw temperature data buffer
-    uint8_t temp[2];
+    uint8_t raw_temp[2];
     // Output temperature data
-    int16_t outTemp;
+    int16_t out_temp;
     
 
     for(;;)
     {
         
+        CyDelay(100); // Sample at approx. 10 Hz
+        
         // Get raw temperature data from the LIS3DH
+        error = I2C_Peripheral_ReadRegisterMulti(LIS3DH_DEVICE_ADDRESS,
+                                                 LIS3DH_OUT_ADC_3L,
+                                                 2,
+                                                 raw_temp);
         
-        // Apply the dirty trick 
+        // Convert the value
+        out_temp = (int16_t)((raw_temp[0] | (raw_temp[1] << 8))) >> 6;
         
-        // Fill the data BUFFER
         
-        // Log: put the array over UART 
+        #if USE_BRIDGECONTROLPANEL
+            // Send Raw Data Bytes
+            dataArray[1] = (uint8_t) (out_temp & 0xFF);
+            dataArray[2] = (uint8_t) (out_temp >> 8);
+            UART_1_PutArray(dataArray, 4);
+        #else
+            // Send the uint16_t value
+            // Apply the dirty trick 
+            out_temp *= dirtyTrick;
+            sprintf(message, "Temp = %d\r\n", out_temp);
+            UART_1_PutString(message);
+        #endif
+         
         
     }
+    
+    return 0;
+    
 }
 
 /* [] END OF FILE */
