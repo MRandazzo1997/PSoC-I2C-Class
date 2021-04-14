@@ -37,9 +37,7 @@ int main(void)
     /******************************************/
     /*            I2C Writing                 */
     /******************************************/
-    
-    // String to print out messages on the UART
-    char message[50] = {'\0'};
+
     
     uint8_t ctrl_reg1;
     ErrorCode error;
@@ -48,13 +46,13 @@ int main(void)
     // Write CTRL_REG1 and ...
     
     // Write CTRL_REG1 and...
-    if ( ctrl_reg1 != LIS3DH_NORMAL_MODE_OFF_CTRL_REG1 ) {
+    //if ( ctrl_reg1 != LIS3DH_NORMAL_MODE_OFF_CTRL_REG1 ) {
         UART_1_PutString("\r\nWriting to CTRL_REG1...\r\n");
         
         ctrl_reg1 = LIS3DH_NORMAL_MODE_CTRL_REG1;
         error = I2C_Peripheral_WriteRegister(LIS3DH_DEVICE_ADDRESS,
                                              LIS3DH_CTRL_REG1,
-                                             LIS3DH_NORMAL_MODE_OFF_CTRL_REG1);
+                                             LIS3DH_NORMAL_MODE_CTRL_REG1);
     
         if( error == NO_ERROR ) {
             sprintf(message, "CTRL_REG1 successfully written as: 0x%02X\r\n", ctrl_reg1);
@@ -64,7 +62,7 @@ int main(void)
         {
             UART_1_PutString("I2C error while writing CTRL_REG1\r\n");   
         }
-    }
+    //}
     
     
     // ... read the value of CTRL_REG1 and make sure
